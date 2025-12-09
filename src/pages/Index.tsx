@@ -1,13 +1,16 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { DashboardLayout } from '@/layouts/DashboardLayout';
+import { MapView } from '@/components/dashboard/MapView';
 
 const Index = () => {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
+    <DashboardLayout 
+      title="Map View" 
+      subtitle="Real-time glacial lake monitoring across Pakistan's northern areas"
+    >
+      <div className="h-[calc(100vh-8rem)] rounded-xl overflow-hidden">
+        <MapView />
       </div>
-    </div>
+    </DashboardLayout>
   );
 };
 
