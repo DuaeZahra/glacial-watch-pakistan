@@ -277,30 +277,207 @@ export const recentAlerts: Alert[] = [
   },
 ];
 
+// Flow path data for DEM-based routing
+export interface FlowPathSegment {
+  start: [number, number, number]; // [x, y, elevation]
+  end: [number, number, number];
+  velocity: number; // m/s
+  volume: number; // m³/s
+}
+
+// Breach model parameters
+export interface BreachModel {
+  breachWidth: number; // meters
+  breachDepth: number; // meters
+  breachTime: number; // minutes to full breach
+  peakDischarge: number; // m³/s
+  breachFormation: string;
+}
+
+// Enhanced simulation scenario with DEM routing
+export interface FloodScenario {
+  time: string;
+  timeMinutes: number;
+  affectedArea: number; // km²
+  floodDepth: number; // max depth in meters
+  affectedSettlements: string[];
+  affectedPopulation: number;
+  affectedInfrastructure: {
+    villages: number;
+    roads: number;
+    bridges: number;
+    hospitals: number;
+    schools: number;
+  };
+  flowPath: FlowPathSegment[];
+  inundationZone: {
+    boundaries: [number, number][];
+    depth: number;
+  };
+  breachProgress: number; // 0-100%
+}
+
 export const floodSimulationData = {
   lakeId: 'shishper',
   lakeName: 'Shishper Glacier Lake',
+  breachModel: {
+    breachWidth: 45,
+    breachDepth: 25,
+    breachTime: 30,
+    peakDischarge: 8500,
+    breachFormation: 'Progressive overtopping and erosion of moraine dam',
+  } as BreachModel,
+  totalVolume: 12.8, // million m³
+  valleySlope: 0.035, // 3.5% average slope
   scenarios: [
     {
-      time: '1 hour',
+      time: 'T+0m (Breach initiation)',
+      timeMinutes: 0,
+      affectedArea: 0.5,
+      floodDepth: 2.8,
+      affectedSettlements: [],
+      affectedPopulation: 0,
+      affectedInfrastructure: {
+        villages: 0,
+        roads: 0,
+        bridges: 0,
+        hospitals: 0,
+        schools: 0,
+      },
+      flowPath: [
+        { start: [0, 0.5, 2850], end: [1, -0.5, 2820], velocity: 8.5, volume: 1200 },
+      ],
+      inundationZone: {
+        boundaries: [[0, 0], [0.5, -0.3], [0.5, -0.8], [0, -0.5]],
+        depth: 2.8,
+      },
+      breachProgress: 15,
+    },
+    {
+      time: 'T+15m (Partial breach)',
+      timeMinutes: 15,
+      affectedArea: 3.2,
+      floodDepth: 3.5,
+      affectedSettlements: [],
+      affectedPopulation: 0,
+      affectedInfrastructure: {
+        villages: 0,
+        roads: 1,
+        bridges: 0,
+        hospitals: 0,
+        schools: 0,
+      },
+      flowPath: [
+        { start: [0, 0.5, 2850], end: [1, -0.5, 2820], velocity: 12.2, volume: 3500 },
+        { start: [1, -0.5, 2820], end: [2, -1.2, 2780], velocity: 14.5, volume: 3500 },
+      ],
+      inundationZone: {
+        boundaries: [[0, 0], [1.5, -0.8], [1.5, -1.5], [0, -0.8]],
+        depth: 3.5,
+      },
+      breachProgress: 45,
+    },
+    {
+      time: 'T+45m (Full breach)',
+      timeMinutes: 45,
       affectedArea: 12.5,
       floodDepth: 4.2,
       affectedSettlements: ['Hassanabad'],
       affectedPopulation: 2500,
+      affectedInfrastructure: {
+        villages: 1,
+        roads: 2,
+        bridges: 0,
+        hospitals: 0,
+        schools: 0,
+      },
+      flowPath: [
+        { start: [0, 0.5, 2850], end: [1, -0.5, 2820], velocity: 18.5, volume: 8500 },
+        { start: [1, -0.5, 2820], end: [2, -1.2, 2780], velocity: 19.2, volume: 8500 },
+        { start: [2, -1.2, 2780], end: [3, -1.5, 2730], velocity: 16.8, volume: 8000 },
+      ],
+      inundationZone: {
+        boundaries: [[0, 0], [3, -1], [3, -2], [1, -1.8], [0, -1]],
+        depth: 4.2,
+      },
+      breachProgress: 100,
     },
     {
-      time: '2 hours',
+      time: 'T+2h (Peak flow)',
+      timeMinutes: 120,
       affectedArea: 28.3,
-      floodDepth: 3.1,
+      floodDepth: 3.8,
       affectedSettlements: ['Hassanabad', 'Aliabad'],
       affectedPopulation: 8500,
+      affectedInfrastructure: {
+        villages: 2,
+        roads: 3,
+        bridges: 1,
+        hospitals: 1,
+        schools: 1,
+      },
+      flowPath: [
+        { start: [0, 0.5, 2850], end: [1, -0.5, 2820], velocity: 15.2, volume: 6500 },
+        { start: [1, -0.5, 2820], end: [2, -1.2, 2780], velocity: 16.8, volume: 6500 },
+        { start: [2, -1.2, 2780], end: [3, -1.5, 2730], velocity: 14.5, volume: 6200 },
+        { start: [3, -1.5, 2730], end: [5, -2.0, 2640], velocity: 12.8, volume: 5800 },
+      ],
+      inundationZone: {
+        boundaries: [[0, 0], [5, -1.5], [5, -2.5], [2, -2.5], [0, -1.5]],
+        depth: 3.8,
+      },
+      breachProgress: 100,
     },
     {
-      time: '5 hours',
+      time: 'T+5h (Extended flow)',
+      timeMinutes: 300,
       affectedArea: 65.8,
-      floodDepth: 1.8,
+      floodDepth: 2.4,
       affectedSettlements: ['Hassanabad', 'Aliabad', 'Karimabad', 'Ganish'],
       affectedPopulation: 22000,
+      affectedInfrastructure: {
+        villages: 4,
+        roads: 5,
+        bridges: 1,
+        hospitals: 1,
+        schools: 1,
+      },
+      flowPath: [
+        { start: [0, 0.5, 2850], end: [2, -1.2, 2780], velocity: 8.5, volume: 3200 },
+        { start: [2, -1.2, 2780], end: [4, -1.8, 2680], velocity: 9.2, volume: 3100 },
+        { start: [4, -1.8, 2680], end: [6, -2.2, 2520], velocity: 8.8, volume: 2900 },
+        { start: [6, -2.2, 2520], end: [8, -2.6, 2420], velocity: 7.5, volume: 2700 },
+      ],
+      inundationZone: {
+        boundaries: [[0, 0], [8.5, -2], [8.5, -3.2], [4, -3], [0, -2]],
+        depth: 2.4,
+      },
+      breachProgress: 100,
     },
-  ],
+    {
+      time: 'T+8h (Recession)',
+      timeMinutes: 480,
+      affectedArea: 45.2,
+      floodDepth: 1.5,
+      affectedSettlements: ['Hassanabad', 'Aliabad', 'Karimabad'],
+      affectedPopulation: 17000,
+      affectedInfrastructure: {
+        villages: 3,
+        roads: 4,
+        bridges: 1,
+        hospitals: 1,
+        schools: 1,
+      },
+      flowPath: [
+        { start: [2, -1.2, 2780], end: [4, -1.8, 2680], velocity: 5.2, volume: 1500 },
+        { start: [4, -1.8, 2680], end: [6, -2.2, 2520], velocity: 5.8, volume: 1400 },
+        { start: [6, -2.2, 2520], end: [8, -2.6, 2420], velocity: 4.5, volume: 1200 },
+      ],
+      inundationZone: {
+        boundaries: [[1, -0.5], [7.5, -2], [7.5, -2.8], [3, -2.5], [1, -1.5]],
+        depth: 1.5,
+      },
+      breachProgress: 100,
+    },
+  ] as FloodScenario[],
 };
