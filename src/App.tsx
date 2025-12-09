@@ -8,6 +8,7 @@ import Analytics from "./pages/Analytics";
 import Alerts from "./pages/Alerts";
 import Simulation from "./pages/Simulation";
 import Settings from "./pages/Settings";
+import EvacuationPlanner from "./pages/EvacuationPlanner";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -23,6 +24,7 @@ const App = () => (
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/alerts" element={<Alerts />} />
           <Route path="/simulation" element={<Simulation />} />
+          <Route path="/evacuation" element={<EvacuationPlanner />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -1,112 +1,113 @@
-import { useEffect, useRef, useState } from 'react';
-import mapboxgl from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
+import { useState } from 'react';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { glacialLakes, GlacialLake } from '@/data/lakes';
 import { LakeDetailPanel } from './LakeDetailPanel';
 
-const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_PUBLIC_TOKEN;
+// Fix for default marker icons in Leaflet with bundlers
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+});
+
+// Create custom icons for different risk levels
+const createCustomIcon = (riskLevel: string) => {
+  const color = riskLevel === 'critical' ? '#ef4444' : riskLevel === 'high' ? '#f97316' : '#06b6d4';
+  return L.divIcon({
+    className: 'custom-marker',
+    html: `
+      <div style="
+        width: 24px;
+        height: 24px;
+        background: ${color};
+        border: 3px solid white;
+        border-radius: 50%;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+        animation: ${riskLevel === 'critical' ? 'pulse 2s infinite' : 'none'};
+      "></div>
+    `,
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
+  });
+};
 
 export function MapView() {
-  const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
   const [selectedLake, setSelectedLake] = useState<GlacialLake | null>(null);
-  const [mapLoaded, setMapLoaded] = useState(false);
-
-  useEffect(() => {
-    if (!mapContainer.current || !MAPBOX_TOKEN) return;
-
-    mapboxgl.accessToken = MAPBOX_TOKEN;
-
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/dark-v11',
-      center: [74.5, 35.8],
-      zoom: 6.5,
-      pitch: 45,
-      bearing: -10,
-    });
-
-    map.current.addControl(
-      new mapboxgl.NavigationControl({
-        visualizePitch: true,
-      }),
-      'top-right'
-    );
-
-    map.current.on('load', () => {
-      setMapLoaded(true);
-
-      // Add 3D terrain
-      map.current?.addSource('mapbox-dem', {
-        type: 'raster-dem',
-        url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
-        tileSize: 512,
-        maxzoom: 14,
-      });
-      
-      map.current?.setTerrain({ source: 'mapbox-dem', exaggeration: 1.5 });
-
-      // Add atmosphere
-      map.current?.setFog({
-        color: 'hsl(220, 25%, 10%)',
-        'high-color': 'hsl(220, 25%, 15%)',
-        'horizon-blend': 0.1,
-        'space-color': 'hsl(220, 25%, 5%)',
-        'star-intensity': 0.3,
-      });
-
-      // Add lake markers
-      glacialLakes.forEach((lake) => {
-        const markerEl = document.createElement('div');
-        markerEl.className = `lake-marker ${lake.riskLevel === 'critical' ? 'critical' : lake.riskLevel === 'high' ? 'warning' : ''}`;
-        
-        const popup = new mapboxgl.Popup({
-          offset: 25,
-          closeButton: false,
-          className: 'lake-popup',
-        }).setHTML(`
-          <div style="background: hsl(220, 20%, 10%); padding: 12px; border-radius: 8px; min-width: 180px;">
-            <h3 style="color: hsl(185, 85%, 45%); font-family: 'Orbitron', sans-serif; font-size: 12px; margin-bottom: 8px; font-weight: 600;">${lake.name}</h3>
-            <p style="color: hsl(210, 40%, 70%); font-size: 11px; margin-bottom: 6px;">${lake.region}</p>
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span style="color: hsl(210, 40%, 55%); font-size: 10px;">Breach Risk</span>
-              <span style="color: ${lake.riskLevel === 'critical' ? 'hsl(0, 85%, 55%)' : lake.riskLevel === 'high' ? 'hsl(35, 95%, 55%)' : 'hsl(185, 85%, 45%)'}; font-weight: 700; font-size: 14px;">${lake.breachProbability}%</span>
-            </div>
-          </div>
-        `);
-
-        const marker = new mapboxgl.Marker({ element: markerEl })
-          .setLngLat(lake.coordinates)
-          .setPopup(popup)
-          .addTo(map.current!);
-
-        markerEl.addEventListener('click', () => {
-          setSelectedLake(lake);
-        });
-      });
-    });
-
-    return () => {
-      map.current?.remove();
-    };
-  }, []);
-
-  if (!MAPBOX_TOKEN) {
-    return (
-      <div className="flex-1 flex items-center justify-center bg-card">
-        <div className="text-center p-8 glass-card max-w-md">
-          <h3 className="font-display text-lg text-primary mb-2">Mapbox Token Required</h3>
-          <p className="text-sm text-muted-foreground">
-            Please add your MAPBOX_PUBLIC_TOKEN in the project secrets to enable the interactive map.
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className="flex-1 relative">
-      <div ref={mapContainer} className="absolute inset-0" />
+    <div className="w-full h-full relative">
+      <MapContainer
+        center={[35.8, 74.5]}
+        zoom={7}
+        style={{ height: '100%', width: '100%', position: 'absolute', top: 0, left: 0 }}
+        className="z-0"
+      >
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+        
+        {glacialLakes.map((lake) => (
+          <Marker
+            key={lake.id}
+            position={[lake.coordinates[1], lake.coordinates[0]]}
+            icon={createCustomIcon(lake.riskLevel)}
+            eventHandlers={{
+              click: () => setSelectedLake(lake),
+            }}
+          >
+            <Popup>
+              <div style={{ 
+                background: 'hsl(220, 20%, 10%)', 
+                padding: '12px', 
+                borderRadius: '8px', 
+                minWidth: '180px',
+                color: 'white'
+              }}>
+                <h3 style={{ 
+                  color: 'hsl(185, 85%, 45%)', 
+                  fontFamily: "'Orbitron', sans-serif", 
+                  fontSize: '12px', 
+                  marginBottom: '8px', 
+                  fontWeight: 600 
+                }}>
+                  {lake.name}
+                </h3>
+                <p style={{ 
+                  color: 'hsl(210, 40%, 70%)', 
+                  fontSize: '11px', 
+                  marginBottom: '6px' 
+                }}>
+                  {lake.region}
+                </p>
+                <div style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center' 
+                }}>
+                  <span style={{ color: 'hsl(210, 40%, 55%)', fontSize: '10px' }}>
+                    Breach Risk
+                  </span>
+                  <span style={{ 
+                    color: lake.riskLevel === 'critical' 
+                      ? 'hsl(0, 85%, 55%)' 
+                      : lake.riskLevel === 'high' 
+                      ? 'hsl(35, 95%, 55%)' 
+                      : 'hsl(185, 85%, 45%)', 
+                    fontWeight: 700, 
+                    fontSize: '14px' 
+                  }}>
+                    {lake.breachProbability}%
+                  </span>
+                </div>
+              </div>
+            </Popup>
+          </Marker>
+        ))}
+      </MapContainer>
       
       {/* Map overlay stats */}
       <div className="absolute top-4 left-4 z-10 flex gap-3">

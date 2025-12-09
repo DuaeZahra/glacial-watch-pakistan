@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Map, BarChart3, Bell, Settings, Mountain, Activity, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Map, BarChart3, Bell, Settings, Mountain, Activity, ChevronLeft, ChevronRight, Navigation2 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
@@ -9,6 +9,7 @@ const navItems = [
   { icon: BarChart3, label: 'Lake Analytics', path: '/analytics' },
   { icon: Bell, label: 'Alerts', path: '/alerts' },
   { icon: Activity, label: 'Simulation', path: '/simulation' },
+  { icon: Navigation2, label: 'Evacuation Routes', path: '/evacuation' },
   { icon: Settings, label: 'Settings', path: '/settings' },
 ];
 
